@@ -7,6 +7,7 @@ import testRouter from "./test";
 import bookingsRouter from "./user/bookings";
 import transactionRouter from "./user/transaction"
 import superAdminRouter from "./superadmin";
+import razorpayRouter from "./razorpay"
 
 const router: Router = Router();
 

@@ -64,7 +64,8 @@ router.post("/", userMiddleware, async (req, res) => {
                         qr: ""
                     }))
                 },
-                expiry: new Date(new Date().getTime() + event.timeoutInS * 1000)
+                expiry: new Date(new Date().getTime() + event.timeoutInS * 1000),
+                currentSequenceNumber : 1
             }
         });
     

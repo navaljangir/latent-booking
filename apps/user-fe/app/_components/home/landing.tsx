@@ -18,7 +18,9 @@ export function LandingPage() {
             <div className=" h-full  flex items-center">
               <div className="flex flex-col gap-10">
                 <HeroText />
-                <JoinButton />
+                <div className="flex justify-center">
+                <JoinButton/>
+                </div>
               </div>
             </div>
             <MediaShowcase />

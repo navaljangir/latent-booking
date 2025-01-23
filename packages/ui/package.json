@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
+    "./otp-input": "./src/otp-input.tsx",
     "./utils": "./src/lib/utils.ts",
     "./button": "./src/button.tsx",
     "./card": "./src/card.tsx",
@@ -17,8 +18,8 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
     "@repo/tailwind-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@turbo/gen": "^1.12.4",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.55",
@@ -33,6 +34,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "input-otp": "^1.4.2",
     "lucide-react": "^0.323.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

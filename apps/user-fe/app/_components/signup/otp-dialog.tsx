@@ -4,6 +4,7 @@ import { cn } from "@repo/ui/utils";
 import { manrope } from "../../lib/fonts";
 import { OtpGirl } from "../../assets";
 import { useState } from "react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@repo/ui/otp-input";
 
 interface OtpDialogProps {
   isOpen: boolean;
@@ -45,8 +46,9 @@ export function OtpDialog({ isOpen, onClose }: OtpDialogProps) {
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className={cn("text-white text-2xl mb-1", manrope.className)}>
+          {/* Resend Link */}
+          <div className="mb-2">
+            <h2 className={cn("text-white text-2xl", manrope.className)}>
               Enter your OTP.{" "}
               <span>
                 <button className="text-neutral-400 text-2xl underline mb-6">
@@ -55,19 +57,16 @@ export function OtpDialog({ isOpen, onClose }: OtpDialogProps) {
               </span>
             </h2>
           </div>
-
-          {/* Resend Link */}
-
+          
           {/* OTP Input Fields */}
-          <div className="flex gap-3 mb-6">
-            {[...Array(4)].map((_, index) => (
-              <input
-                key={index}
-                type="text"
-                maxLength={1}
-                className="w-14 h-14 bg-transparent border border-[#333333] rounded-xl text-center text-white text-2xl focus:outline-none focus:border-[#F8D48D]"
-              />
-            ))}
+          <div className="flex mb-6">
+            <InputOTP maxLength={4} className="">
+              <InputOTPGroup className="space-x-2">
+                {[...Array(4)].map((_, index) => (
+                  <InputOTPSlot index={index} className="text-white text-xl h-14" />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
           </div>
 
           {/* Verify Button */}
