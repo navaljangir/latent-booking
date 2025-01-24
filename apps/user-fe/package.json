@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@repo/ui": "workspace:*",
+    "axios": "^1.7.9",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.323.0",
     "next": "^14.0.4",
     "react": "^18.2.0",
@@ -19,6 +21,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/tailwind-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",

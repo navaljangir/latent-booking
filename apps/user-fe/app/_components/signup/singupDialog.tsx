@@ -1,18 +1,19 @@
 import { Dialog, DialogContent } from "@repo/ui/dialog";
-import { Input } from "@repo/ui/input";
 import { Button } from "@repo/ui/button";
 import Image from "next/image";
 import { cn } from "@repo/ui/utils";
 import { figtree, manrope } from "../../lib/fonts";
 import { useState } from "react";
 import { MaheepSingh } from "../../assets";
-import { OtpDialog } from "./otp-dialog";
 
 interface LoginDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 import Link from "next/link";
+import axios from "axios";
+import { LoaderIcon } from "lucide-react";
+import { OtpDialog } from "./otp-dialog";
 
 interface LoginDialogProps {
   isOpen: boolean;
@@ -26,7 +27,8 @@ interface LoginDialogProps {
 
 export function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
   const [showOtp, setShowOtp] = useState(false);
-
+ const [phoneNumber, setPhoneNumber] = useState<string>("");
+ const [loading, setLoading] = useState<boolean>(false);
   // Handle closing both dialogs
   const handleClose = () => {
     setShowOtp(false);
@@ -34,8 +36,21 @@ export function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
   };
 
   // Handle next button click
-  const handleNextClick = () => {
-    setShowOtp(true);
+  const handleNextClick = async() => {
+    setLoading(true);
+    const response = await axios.post("http://localhost:8080/api/v1/user/signup", {
+      number: "+91" + phoneNumber
+    },{
+      withCredentials: true,
+    } 
+  );
+    console.log("response", response)
+    setLoading(false)
+    if(response.status === 200){
+      setShowOtp(true);
+    }else{
+      alert("something went wrong")
+    }
   };
 
   return (
@@ -74,18 +89,23 @@ export function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
 
             {/* Input Field */}
             <input
+              required
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              value={phoneNumber}
               type="text"
-              placeholder="98"
+              placeholder="9876543***"
               className="w-full h-14 bg-transparent border border-[#333333] rounded-xl px-5 py-6 text-white mb-4 focus:outline-none focus:border-[#F8D48D] placeholder-neutral-400 text-lg"
             />
 
             {/* Buttons with Separator */}
             <div className="w-full space-y-3">
               <button
-                onClick={() => setShowOtp(true)}
+                onClick={handleNextClick}
                 className="w-full h-14 bg-[#F4F4F4] text-black font-medium py-4 rounded-xl hover:bg-white transition-colors text-lg"
               >
-                Next
+                {
+                  loading ? <LoaderIcon /> : "Next"
+                }
               </button>
 
               <div className="w-full h-[1px] bg-[#333333]" />
@@ -120,7 +140,7 @@ export function LoginDialog({ isOpen, onClose }: LoginDialogProps) {
         </DialogContent>
       </Dialog>
 
-      <OtpDialog isOpen={showOtp} onClose={() => setShowOtp(false)} />
+      <OtpDialog phoneNumber={phoneNumber} isOpen={showOtp} onClose={() => setShowOtp(false)} />
     </>
   );
 }
