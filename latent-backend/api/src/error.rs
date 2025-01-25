@@ -1,5 +1,4 @@
-use poem_openapi::{payload::Json, ApiResponse};
-use poem_openapi::Object;
+use poem_openapi::{payload::Json, ApiResponse, Object};
 
 #[derive(Debug, Object)]
 pub struct ErrorBody {
@@ -8,21 +7,40 @@ pub struct ErrorBody {
 
 #[derive(ApiResponse, Debug)]
 pub enum AppError {
-    /// Something went wrong internally (500)
+    /// Database error (500)
+    #[oai(status = 500)]
+    Database(Json<ErrorBody>),
+
+    /// Not found (404)
+    #[oai(status = 404)]
+    NotFound(Json<ErrorBody>),
+
+    /// Invalid credentials (401)
+    #[oai(status = 401)]
+    InvalidCredentials(Json<ErrorBody>),
+
+    /// Unauthorized (401)
+    #[oai(status = 401)]
+    Unauthorized(Json<ErrorBody>),
+
+    /// Internal server error (500)
     #[oai(status = 500)]
     InternalServerError(Json<ErrorBody>),
-    
-    // If you have other error scenarios, you can add more variants:
-    // #[oai(status = 400)]
-    // BadRequest(Json<ErrorBody>),
-    // etc.
+
+    /// Bad request (400)
+    #[oai(status = 400)]
+    BadRequest(Json<ErrorBody>),
 }
 
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
-        println!("{}", err);
-        AppError::InternalServerError(Json(ErrorBody {
-            message: "Error while updating DB".to_string(),
-        }))
+        match err {
+            sqlx::Error::RowNotFound => AppError::NotFound(Json(ErrorBody {
+                message: "Resource not found".to_string(),
+            })),
+            _ => AppError::Database(Json(ErrorBody {
+                message: "Database error occurred".to_string(),
+            })),
+        }
     }
 }

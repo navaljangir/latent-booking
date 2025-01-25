@@ -4,3 +4,5 @@ members = [
 	"api",
 	"db"
 ]
+
+resolver = "2"
