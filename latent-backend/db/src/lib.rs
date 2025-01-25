@@ -3,6 +3,8 @@ use log::{info, error};
 
 mod config;
 mod user;
+mod location;
+mod admin;
 
 pub use user::User;
 
