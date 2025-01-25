@@ -1,22 +1,45 @@
-use config::Config;
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
-pub mod user;
-pub mod config;
+use sqlx::postgres::PgPool;
+use log::{info, error};
 
-#[derive(Clone)]
+mod config;
+mod user;
+
+pub use user::User;
+
 pub struct Db {
-    client: Pool<Postgres>,
+    client: PgPool,
 }
 
 impl Db {
     pub async fn new() -> Self {
-        let config = Config::default();
-        let client = PgPoolOptions::new().max_connections(5).connect(&config.db_url).await.unwrap();
+        info!("Creating database pool...");
+        let pool = config::create_pool().await;
+        Self { client: pool }
+    }
 
-        let db = Db { 
-            client
-        };
-        return db;
+    pub async fn init(&self) -> Result<(), sqlx::Error> {
+        info!("Running database migrations...");
+        
+        // First verify connection
+        match sqlx::query("SELECT 1").execute(&self.client).await {
+            Ok(_) => info!("Database connection successful"),
+            Err(e) => {
+                error!("Failed to connect to database: {}", e);
+                return Err(e);
+            }
+        }
+
+        // Run migrations
+        match sqlx::migrate!("./migrations").run(&self.client).await {
+            Ok(_) => {
+                info!("Database migrations completed successfully");
+                Ok(())
+            },
+            Err(e) => {
+                error!("Migration failed: {}", e);
+                Err(e.into())
+            }
+        }
     }
 }
 
