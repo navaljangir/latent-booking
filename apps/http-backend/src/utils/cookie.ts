@@ -22,7 +22,7 @@ export const setCookie = (res: Response, userid: string, statusCode: number, coo
         .status(statusCode)
         .cookie("token", token, {
             httpOnly: true,
-            maxAge: 15 * 60 * 1000,
+            maxAge: Infinity,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             secure: process.env.NODE_ENV === "production" ? true : false,
         })
