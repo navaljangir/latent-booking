@@ -41,20 +41,25 @@ async fn main() -> Result<(), std::io::Error> {
     let location_api_service =  OpenApiService::new(routes::admin::location::LocationApi, "Location Latent Booking API", "1.0")
     .server(format!("{}/location", server_url));
 
+    let event_api_service = OpenApiService::new(routes::admin::event::EventApi,  "Location Latent Booking API", "1.0")
+    .server(format!("{}/event", server_url));
 
     // Swagger UI for each API group
     let user_ui = user_api_service.swagger_ui();
     let admin_ui = admin_api_service.swagger_ui();
     let location_ui = admin_api_service.swagger_ui();
+    let events_ui = admin_api_service.swagger_ui();
 
     // routes
     let mut app = Route::new()
         .nest("/api/v1/users", user_api_service)
         .nest("/api/v1/admin", admin_api_service)
         .nest("/api/v1/admin/location", location_api_service)
+        .nest("/api/v1/admin/event", event_api_service)
         .nest("/docs/user", user_ui)
         .nest("/docs/admin", admin_ui)
-        .nest("/doc/admin/location", location_ui);
+        .nest("/doc/admin/location", location_ui)
+        .nest("/doc/admin/event", events_ui);
 
     // Test route
         if cfg!(debug_assertions) {

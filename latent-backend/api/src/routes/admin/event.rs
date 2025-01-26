@@ -1,85 +1,116 @@
-// use poem::web::{Data, Json};
-// use poem_openapi::{OpenApi, Object, payload};
-// use crate::{error::AppError, AppState, utils::{totp, twilio}};
-// use serde::{Deserialize, Serialize};
-
-// #[derive(Debug, Serialize, Deserialize, Object)]
-// pub struct CreateSuperAdmin {
-//     pub number: String,
-// }
-
-// #[derive(Debug, Deserialize, Serialize, Object)]
-// pub struct CreateSuperAdminResponse {
-//     pub message: String,
-//     pub id: String,
-// }
-
-// #[derive(Debug, Serialize, Deserialize, Object)]
-// pub struct CreateAdminVerify {
-//     number: String,
-//     totp: String,
-//     name: String,
-// }
-
-// #[derive(Debug, Deserialize, Serialize, Object)]
-// pub struct VerifyAdminResponse {
-//     token: String,
-// }
-
-// pub struct  AdminApi; 
-
-// #[OpenApi]
-// impl AdminApi {
-//     /// Create a super admin
-//     #[oai(path = "/signin", method = "post")]
-//     pub async fn signin_admin(
-//         &self, 
-//         body: Json<CreateSuperAdmin>, 
-//         state: Data<&AppState>
-//     ) -> poem::Result<payload::Json<CreateSuperAdminResponse>, AppError> {
-//         let number = body.0.number;
-//         let super_admin = state.db.create_admin(number.clone()).await?;
-
-//         // Generate and send OTP
-//         let otp = totp::get_token(&number, "SUPERADMIN");
-//         if cfg!(not(debug_assertions)) {
-//             twilio::send_message(&format!("Your OTP for signing up to Latent is {}", otp), &number)
-//                 .await
-//                 .map_err(|_| AppError::InternalServerError(payload::Json(crate::error::ErrorBody {
-//                     message: "Failed to send OTP".to_string(),
-//                 })))?;
-//         } else {
-//             println!("Development mode: OTP is {}", otp);
-//         }
+use poem::web::{Data, Json};
+use poem_openapi::{OpenApi, Object, payload};
+use crate::{error::AppError, AppState};
+use serde::{Deserialize, Serialize};
+use time::format_description;
+use time::PrimitiveDateTime;
+use uuid::Uuid;
+use db::events::SeatType;
 
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateEventRequest {
+    pub name: String,
+    pub description: String,
+    pub start_time: String,
+    pub location_id: String,
+    pub admin_id: String,
+    pub banner: String,
+    pub seats: SeatType,
+}
 
-//         Ok(payload::Json(CreateSuperAdminResponse {
-//             message: "Super Admin created successfully".to_string(),
-//             id: super_admin.id.to_string()
-//         }))
-//     }
 
-//     /// Verify admin creation
-//     #[oai(path = "/verify", method = "post")]
-//     pub async fn create_admin_verify(
-//         &self, 
-//         body: Json<crate::routes::admin::CreateAdminVerify>,
-//         state: Data<&AppState>
-//     ) -> poem::Result<payload::Json<crate::routes::admin::VerifyAdminResponse>, AppError> {
-//         let crate::routes::admin::CreateAdminVerify { number, totp: otp, name } = body.0;
+#[derive(Debug, Deserialize, Serialize, Object)]
+pub struct CreateEventResponse {
+    pub message: String,
+    pub id: String,
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetEventRequest {
+    pub admin_id: String
+}
+#[derive(Debug, Deserialize, Serialize, Object)]
+pub struct GetEventResponse {
+    pub message: String,
+    pub events: String,
+}
+
+
+pub struct EventApi; 
+
+#[OpenApi]
+impl EventApi {
+    #[oai(path = "/create", method = "post")]
+    pub async fn create_event(
+        &self, 
+        body: Json<CreateEventRequest>, 
+        state: Data<&AppState>,
+    ) -> poem::Result<payload::Json<CreateEventResponse>, AppError> {
+        // Parse UUIDs
+        let location_id = Uuid::parse_str(&body.location_id)
+            .map_err(|_| AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
+                message: "Invalid Location ID".to_string(),
+            })))?;
+    
+        let admin_id = Uuid::parse_str(&body.admin_id)
+            .map_err(|_| AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
+                message: "Invalid Admin ID".to_string(),
+            })))?;
+
+        // Parse start time
+        let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")
+            .map_err(|_| AppError::InternalServerError(payload::Json(crate::error::ErrorBody {
+                message: "Invalid date format".to_string(),
+            })))?;
+
+        let start_time = PrimitiveDateTime::parse(&body.start_time, &format)
+            .map_err(|_| AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
+                message: "Invalid start time".to_string(),
+            })))?;
+
+        // Create event
+        let event = state
+            .db
+            .create_event(
+                body.name.clone(),
+                body.description.clone(),
+                body.banner.clone(),
+                admin_id,
+                location_id,
+                start_time,
+                body.seats.clone(),
+            )
+            .await?;
         
-//         // Verify OTP
-//         if cfg!(not(debug_assertions)) {
-//             if !totp::verify_token(&number, "AUTH", &otp) {
-//                 return Err(AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
-//                     message: "Invalid OTP".to_string(),
-//                 })));
-//             }
-//         }
+        Ok(payload::Json(CreateEventResponse {
+            message: "Event created successfully".to_string(),
+            id: event.id.to_string(),
+        }))
+    }
 
-//         let token = state.db.verify_admin(number, name).await?;
+    #[oai(path = "/", method = "get")]
+    pub async fn get_events(
+        &self, 
+        body: Json<GetEventRequest>, 
+        state: Data<&AppState>,
+    ) -> poem::Result<payload::Json<GetEventResponse>, AppError> {
+    
+        let admin_id = Uuid::parse_str(&body.admin_id)
+            .map_err(|_| AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
+                message: "Invalid Admin ID".to_string(),
+            })))?;
+
+        // Get event
+        let events = state
+            .db
+            .get_events(
+                admin_id
+            )
+            .await?;
         
-//         Ok(payload::Json(crate::routes::admin::VerifyAdminResponse { token }))
-//     }
-// }
+        Ok(payload::Json(GetEventResponse {
+            message: "Event created successfully".to_string(),
+            events: events[0].name.to_string(),
+        }))
+    }
+}
