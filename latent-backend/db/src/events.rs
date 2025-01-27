@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::Error;
 use sqlx::types::time::PrimitiveDateTime;
 use uuid::Uuid;
+use chrono::Utc;
 
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -11,7 +12,7 @@ pub struct Event {
     pub id: Uuid,
     pub name: String,
     pub description: String,
-    pub image_url: String,
+    pub banner: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SeatType {
@@ -21,6 +22,21 @@ pub struct SeatType {
     pub capacity: u32    
 }
 
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Events {
+    pub id: Uuid,
+    pub name: String,
+    pub description: String,
+    pub banner: String,  
+    pub admin_id: Uuid,
+    pub location_id: Uuid,
+    pub start_time: chrono::DateTime<Utc>,
+    pub processed: i32,
+    pub published: bool,
+    pub ended: bool,
+    pub timeout_in_s: i32,
+    pub created_at: chrono::DateTime<Utc>,
+}
 
 impl Db {
     pub async fn create_event(
@@ -34,7 +50,7 @@ impl Db {
         seats: SeatType,
     ) -> Result<Event, Error> {
         let event_id = Uuid::new_v4();
-        
+        info!("Creating Event for admin {:}", admin_id);
         let mut tx = self.client.begin().await?;
 
         // Insert event
@@ -54,7 +70,7 @@ impl Db {
                 timeout_in_s
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, 0, false, false, 600)
-            RETURNING id, name, description, banner as image_url, start_time
+            RETURNING id, name, description, banner, start_time
             "#
         )
         .bind(event_id)
@@ -99,10 +115,10 @@ impl Db {
     pub async fn get_events(
         &self,
         admin_id: Uuid,
-    ) -> Result<Vec<Event>, Error> {
+    ) -> Result<Vec<Events>, Error> {
         info!("Finding the events for admin {:}", admin_id);
         
-        let events = sqlx::query_as::<_, Event>("SELECT * FROM events WHERE admin_id = $1")
+        let events = sqlx::query_as::<_, Events>("SELECT * FROM events WHERE admin_id = $1")
             .bind(admin_id)
             .fetch_all(&self.client) 
             .await?;

@@ -108,9 +108,14 @@ impl EventApi {
             )
             .await?;
         
+        let events_json = serde_json::to_string(&events)
+        .map_err(|_| AppError::InternalServerError(payload::Json(crate::error::ErrorBody {
+            message: "Failed to serialize events".to_string(),
+        })))?;
+
         Ok(payload::Json(GetEventResponse {
-            message: "Event created successfully".to_string(),
-            events: events[0].name.to_string(),
+            message: "Events retrieved successfully".to_string(),
+            events: events_json,
         }))
     }
 }
