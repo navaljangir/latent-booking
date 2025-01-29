@@ -1,4 +1,5 @@
 use poem::web::{Data, Json};
+use poem_openapi::param::Path;
 use poem_openapi::{OpenApi, Object, payload};
 use crate::{error::AppError, AppState};
 use serde::{Deserialize, Serialize};
@@ -46,7 +47,6 @@ impl EventApi {
         body: Json<CreateEventRequest>, 
         state: Data<&AppState>,
     ) -> poem::Result<payload::Json<CreateEventResponse>, AppError> {
-        // Parse UUIDs
         let location_id = Uuid::parse_str(&body.location_id)
             .map_err(|_| AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
                 message: "Invalid Location ID".to_string(),
@@ -57,7 +57,6 @@ impl EventApi {
                 message: "Invalid Admin ID".to_string(),
             })))?;
 
-        // Parse start time
         let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")
             .map_err(|_| AppError::InternalServerError(payload::Json(crate::error::ErrorBody {
                 message: "Invalid date format".to_string(),
@@ -68,7 +67,7 @@ impl EventApi {
                 message: "Invalid start time".to_string(),
             })))?;
 
-        // Create event
+        // Creating event
         let event = state
             .db
             .create_event(
@@ -94,7 +93,8 @@ impl EventApi {
         body: Json<GetEventRequest>, 
         state: Data<&AppState>,
     ) -> poem::Result<payload::Json<GetEventResponse>, AppError> {
-    
+        println!("{:?}", body.admin_id);
+
         let admin_id = Uuid::parse_str(&body.admin_id)
             .map_err(|_| AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
                 message: "Invalid Admin ID".to_string(),
@@ -118,4 +118,42 @@ impl EventApi {
             events: events_json,
         }))
     }
+
+    #[oai(path = "/:event_id", method = "get")]
+    pub async fn get_event_metadata(
+        &self,
+        event_id: Path<String>,
+        body: Json<GetEventRequest>, 
+        state: Data<&AppState>,
+    ) -> poem::Result<payload::Json<GetEventResponse>, AppError> {
+    
+    let admin_id = Uuid::parse_str(&body.admin_id)
+        .map_err(|_| AppError::InvalidCredentials(payload::Json(crate::error::ErrorBody {
+            message: "Invalid Admin ID".to_string(),
+    })))?;
+
+    println!("{:?}", event_id.0);
+
+    let event_id = Uuid::parse_str(&event_id.0)
+        .map_err(|_| AppError::InternalServerError(payload::Json(crate::error::ErrorBody {
+            message: "Invalid Event ID format".to_string(),
+        })))?;
+
+    // Get specific event
+    let event = state
+        .db
+        .get_event_by_id(admin_id, event_id)
+        .await?;
+
+
+    let event_json = serde_json::to_string(&event)
+        .map_err(|_| AppError::InternalServerError(payload::Json(crate::error::ErrorBody {
+            message: "Failed to serialize event".to_string(),
+        })))?;
+
+    Ok(payload::Json(GetEventResponse {
+        message: "Event metadata retrieved successfully".to_string(),
+        events: event_json,
+    }))
+}
 }

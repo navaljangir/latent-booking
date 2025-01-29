@@ -126,4 +126,21 @@ impl Db {
         info!("Events found: {:?}", events);
         Ok(events)
     }
+
+    pub async fn get_event_by_id(
+        &self,
+        admin_id: Uuid,
+        event_id: Uuid
+    ) -> Result<Events, Error> {
+        info!("Finding the events for admin {:} and {:}", admin_id, event_id);
+        
+        let events = sqlx::query_as::<_, Events>("SELECT * FROM events WHERE admin_id = $1 AND id = $2")
+            .bind(admin_id)
+            .bind(event_id)
+            .fetch_one(&self.client) 
+            .await?;
+    
+        info!("Events found: {:?}", events);
+        Ok(events)
+    }
 }

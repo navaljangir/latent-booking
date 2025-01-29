@@ -9,6 +9,7 @@ use std::{env, sync::Arc};
 mod error;
 mod routes;
 mod utils;
+mod middleware;
 
 use db::Db;
 use dotenv::dotenv;
@@ -25,6 +26,8 @@ async fn main() -> Result<(), std::io::Error> {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
 
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let admin_secret = env::var("ADMIN_JWT_PASSWORD").unwrap_or_else(|_| "admin".to_string());
+    println!("admin_secret inside main {:}", admin_secret);
     let server_url = format!("http://localhost:{}/api/v1", port);
 
     let db = Db::new().await;
@@ -55,7 +58,7 @@ async fn main() -> Result<(), std::io::Error> {
         .nest("/api/v1/users", user_api_service)
         .nest("/api/v1/admin", admin_api_service)
         .nest("/api/v1/admin/location", location_api_service)
-        .nest("/api/v1/admin/event", event_api_service)
+        .nest("/api/v1/admin/event", event_api_service.with(middleware::admin::AuthMiddleware::new(admin_secret)))
         .nest("/docs/user", user_ui)
         .nest("/docs/admin", admin_ui)
         .nest("/doc/admin/location", location_ui)
