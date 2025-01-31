@@ -22,7 +22,7 @@ pub struct  LocationApi;
 
 #[OpenApi]
 impl LocationApi {
-    /// Create a super admin
+    /// Create a location
     #[oai(path = "/create", method = "post")]
     pub async fn create_locations(
         &self, 
@@ -32,8 +32,6 @@ impl LocationApi {
         let name = body.0.name;
         let description = body.0.description;
         let image_url = body.0.image_url;
-
-        // Create a Location
 
         let location = state.db.create_location(name.clone(), description.clone(), image_url.clone()).await?;
 

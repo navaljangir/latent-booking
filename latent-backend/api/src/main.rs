@@ -50,8 +50,8 @@ async fn main() -> Result<(), std::io::Error> {
     // Swagger UI for each API group
     let user_ui = user_api_service.swagger_ui();
     let admin_ui = admin_api_service.swagger_ui();
-    let location_ui = admin_api_service.swagger_ui();
-    let events_ui = admin_api_service.swagger_ui();
+    let location_ui = location_api_service.swagger_ui();
+    let events_ui = event_api_service.swagger_ui();
 
     // routes
     let mut app = Route::new()
@@ -61,8 +61,8 @@ async fn main() -> Result<(), std::io::Error> {
         .nest("/api/v1/admin/event", event_api_service.with(middleware::admin::AuthMiddleware::new(admin_secret)))
         .nest("/docs/user", user_ui)
         .nest("/docs/admin", admin_ui)
-        .nest("/doc/admin/location", location_ui)
-        .nest("/doc/admin/event", events_ui);
+        .nest("/docs/admin/location", location_ui)
+        .nest("/docs/admin/event", events_ui);
 
     // Test route
         if cfg!(debug_assertions) {
