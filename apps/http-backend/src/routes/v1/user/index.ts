@@ -1,17 +1,20 @@
 
-import { Router } from "express";
+import {  Router } from "express";
 import { client } from "@repo/db/client";
+import {client as redisClient} from "@repo/redis/client"
 import jwt from "jsonwebtoken";
 import { JWT_PASSWORD } from "../../../config";
 import { sendMessage } from "../../../utils/twilio";
 import { getToken, verifyToken } from "../../../utils/totp";
 import { SignInSchema, SignInVerifySchema, UserSignUpSchema, UserSignUpVerifySchema } from "@repo/common/types";
 import { setCookie } from "../../../utils/cookie";
+import { otpRateLimitter, otpVerifyRateLimiter } from "../../../middleware";
+import { setUserSessionsByPlan } from "@repo/redis/client";
 
 const router: Router = Router();
 
-router.post("/signup", async (req, res) => {
-    console.log("req.body", req.body);
+
+router.post("/signup", otpRateLimitter,  async (req, res) => {
     const parsedNumber = UserSignUpSchema.safeParse(req.body);
     if (!parsedNumber.success) {
         res.status(400).json({
@@ -22,20 +25,7 @@ router.post("/signup", async (req, res) => {
     const number = parsedNumber.data.number;
     const totp = getToken(number, "AUTH");
 
-    const user = await client.user.upsert({
-        where: {
-            number
-        },
-        create: {
-            number,
-            name: ""
-        },
-        update: {
-
-        }
-    })
-    console.log(process.env.NODE_ENV)
-    if (process.env.NODE_ENV === "dev") {
+    if (process.env.NODE_ENV === "production") {
         // send otp to user
         try {
             console.log("tOtp", totp);
@@ -47,11 +37,13 @@ router.post("/signup", async (req, res) => {
             return
         }
     }
-
-   setCookie(res, user.id, 200, "SIGNUP");
+    res.json({
+        message : 'Otp Sent'
+    })
+   
 });
 
-router.post("/signup/verify", async (req, res) => {
+router.post("/signup/verify",otpVerifyRateLimiter, async (req, res) => {
     const parsedData = UserSignUpVerifySchema.safeParse(req.body);
     if (!parsedData.success) {
         res.status(400).json({
@@ -64,28 +56,43 @@ router.post("/signup/verify", async (req, res) => {
     const otp = parsedData.data.totp;
     const name = parsedData.data.name
 
-    if (process.env.NODE_ENV === "dev" && !verifyToken(number, "AUTH", otp)) {
+    if (process.env.NODE_ENV === "production" && !verifyToken(number, "AUTH", otp)) {
         res.json({
             message: "Invalid token"
         })
         return
     }
 
-    const user = await client.user.update({
+    const user = await client.user.upsert({
         where: {
             number
         },
-        data: {
+        update: {
             name,
             verified: true
+        } , create :{
+            name ,
+            number,
+            verified : true
         }
     })
 
-    setCookie(res, user.id, 200, "LOGIN");
+    const sessionId= crypto.randomUUID();
+    const token = jwt.sign({
+        userId: user.id,
+        plan : user.plan,
+        sessionId
+    }, JWT_PASSWORD)
+
+    // Set user sessions to validate login based on plan
+    const sessionKey = `session:${user.id}`
+    await setUserSessionsByPlan(sessionKey , user.plan , sessionId)
+
+    setCookie(res, token, 200, "LOGIN");
 
 });
 
-router.post("/signin", async (req, res) => {
+router.post("/signin", otpRateLimitter,  async (req, res) => {
     const parsedData = SignInSchema.safeParse(req.body);
     if (!parsedData.success) {
         res.status(400).json({
@@ -125,7 +132,7 @@ router.post("/signin", async (req, res) => {
     }
 });
 
-router.post("/signin/verify", async (req, res) => {
+router.post("/signin/verify",otpVerifyRateLimiter, async (req, res) => {
     const parsedData = SignInVerifySchema.safeParse(req.body);
     if (!parsedData.success) {
         res.status(400).json({
@@ -149,12 +156,17 @@ router.post("/signin/verify", async (req, res) => {
             number
         }
     })
-
+    const sessionId= crypto.randomUUID();
     const token = jwt.sign({
-        userId: user.id
+        userId: user.id,
+        plan : user.plan,
+        sessionId
+
     }, JWT_PASSWORD)
 
-    setCookie(res, user.id, 200, "VERIFY")
+    const sessionKey = `session:${user.id}`
+    await setUserSessionsByPlan(sessionKey , user.plan, sessionId)
+    setCookie(res,token, 200, "VERIFY")
 
 });
 

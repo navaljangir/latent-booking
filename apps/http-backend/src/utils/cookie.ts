@@ -3,31 +3,17 @@ import { JWT_PASSWORD } from "../config";
 import { Response } from "express";
 
 
-export const setCookie = (res: Response, userid: string, statusCode: number, cookieType: "SIGNUP" | "LOGIN" | "VERIFY") => {
-
-    const token = jwt.sign({
-        userId: userid
-    }, JWT_PASSWORD);
-
-    const cookiePayloads: Record<string, string | boolean> = {
-        success: true,
-        id: userid,
-    }
-
-    if(cookieType === "LOGIN" || cookieType === "VERIFY"){
-        cookiePayloads.token = token;
-    }
+export const setCookie = (res: Response, token: string, statusCode: number, cookieType: "SIGNUP" | "LOGIN" | "VERIFY") => {
 
     res
         .status(statusCode)
         .cookie("token", token, {
             httpOnly: true,
-            maxAge: Infinity,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            secure: process.env.NODE_ENV === "production" ? true : false,
+            maxAge: 10*24*60*60*1000,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
         })
         .json({
-            success: true,
-            id: userid,
+            message: 'Logged in',
         });
 }
