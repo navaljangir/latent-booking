@@ -49,7 +49,7 @@ export async function otpRateLimitter(req : Request, res : Response, next  :Next
     const key = `otp_limit:${ip}`
     const maxRequest = 5;
     const expireTime = 5*60; 
-    if(process.env.NODE_ENV==="dev"){
+    if(process.env.NODE_ENV !=="production"){
         next()
         return
     }
@@ -79,7 +79,7 @@ export async function otpVerifyRateLimiter(req: Request, res: Response, next: Ne
     const maxAttempts = 7; // Allow more attempts than OTP requests
     const expireTime = 5 * 60; 
 
-    if (process.env.NODE_ENV === "dev") {
+    if (process.env.NODE_ENV !== "production") {
         next();
         return;
     }

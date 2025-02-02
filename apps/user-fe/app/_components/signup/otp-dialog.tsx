@@ -1,64 +1,82 @@
-import React, { useState } from "react";
-import { Dialog, DialogContent } from "@repo/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@repo/ui/dialog";
 import Image from "next/image";
 import { cn } from "@repo/ui/utils";
 import { manrope } from "../../lib/fonts";
 import { OtpGirl } from "../../assets";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@repo/ui/input";
-import axios from "axios";
-import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRef } from "react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@repo/ui/otp-input";
+import { useDispatch, useSelector } from "react-redux";
+import { IDispatchType, IRootType } from "../../lib/redux/store";
+import { signInVerify, signUpVerify } from "../../lib/redux/authSlice";
+import { toast } from "sonner";
+import { setIsLoginOpen, setIsProcessing, setShowOtp } from "../../lib/redux/signInDialog";
 
 interface OtpDialogProps {
-  isOpen: boolean;
-  phoneNumber: string;
-  onClose: () => void;
+  name?: string
+  number: string
 }
 
-export function OtpDialog({ isOpen, onClose, phoneNumber }: OtpDialogProps) {
-  const [otp, setOtp] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
+// app/_components/auth/otp-dialog.tsx
 
-  const handleOtpChange = (otpValue: string) => {
-    setOtp(otpValue);
-  };
-
+export function OtpDialog({ name, number }: OtpDialogProps) {
+  const otp = useRef('')
+  const otpInputRef = useRef<HTMLInputElement>(null);
+  const dispatch = useDispatch<IDispatchType>()
+  const signInDialog = useSelector((state: IRootType) => state.signInDialog)
+  const isOpen = signInDialog.showOtp
+  const isSignup = signInDialog.isSignup
+  const isProcessing = signInDialog.isProcessing
+  // onClose
+  const onClose = () => {
+    dispatch(setShowOtp(false))
+  }
+  // Close on after successfull signin or signup
+  const onSubmitClose = () => {
+    dispatch(setShowOtp(false))
+    dispatch(setIsLoginOpen(false))
+  }
+  //Handle submit
   const handleSubmit = async () => {
-    if (otp.length === 6) {
-      setIsSubmitting(true);
-    }
-    console.log("otp", otp, " phone", phoneNumber);
-    const response = await axios.post(
-      process.env.NEXT_PUBLIC_BACKEND_URL + "user/signup/verify",
-      {
-        number: phoneNumber,
-        totp: otp,
-        name: "GUest User",
-      },
-      {
-        withCredentials: true,
-      }
-    );
-    console.log("Response in the otp", response.data);
-    if (response.status === 200) {
-      toast.success("Singin Successful.");
-    } else {
-      toast.error("Something went wrong.");
-    }
-    setIsSubmitting(false);
-    router.push("/");
-  };
+    dispatch(setIsProcessing())
 
-  const handleResend = () => {
-    // Implement resend OTP logic
-    console.log("Resend OTP");
-  };
+    //Checks otp size
+    if (otp.current.length < 4) {
+      toast.error('Enter a valid otp', {
+        duration: 2000,
+        className: 'text-red-500'
+      })
+      dispatch(setIsProcessing())
+      return
+    }
+
+    //If otp of length 4
+    let res;
+    if (name && isSignup) {
+      res = await dispatch(signUpVerify({ name, number, totp: otp.current }))
+    } else {
+      res = await dispatch(signInVerify({ number, totp: otp.current }))
+    }
+    if (res.meta.requestStatus === 'rejected') {
+      toast.error(res.payload, {
+        duration: 2000,
+        className: 'text-red-500'
+      })
+    } else {
+      toast.success(res.payload.message, {
+        duration: 2000,
+        className: 'text-green-500'
+      })
+      onSubmitClose()
+    }
+    dispatch(setIsProcessing())
+  }
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[480px] bg-[#1A1A1A] p-12 border-[#f8d48d] border-opacity-25 border-2 rounded-[32px]">
         <div className="flex flex-col items-center pt-10 pb-8">
+          {/* Back Button */}
           <button
             onClick={onClose}
             className="self-start text-white mb-6 hover:text-neutral-400 transition-colors"
@@ -66,7 +84,9 @@ export function OtpDialog({ isOpen, onClose, phoneNumber }: OtpDialogProps) {
             ← Back
           </button>
 
+          {/* Image Container with Speech Bubble */}
           <div className="relative mb-8">
+            {/* Speech Bubble */}
             <div className="absolute top-44 left-1/2 -translate-x-1/3 bg-white text-neutral-950 px-4 py-2 rounded-3xl font-medium text-base whitespace-nowrap z-20">
               Kahin to consent le raha hai
             </div>
@@ -84,60 +104,41 @@ export function OtpDialog({ isOpen, onClose, phoneNumber }: OtpDialogProps) {
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className={cn("text-white text-2xl mb-1", manrope.className)}>
+          {/* Resend Link */}
+          <div className="mb-2">
+            <h2 className={cn("text-white text-2xl", manrope.className)}>
               Enter your OTP.{" "}
               <span>
-                <button
-                  onClick={handleResend}
-                  className="text-neutral-400 text-2xl underline mb-6"
-                >
+                <button className="text-neutral-400 text-2xl underline mb-6">
                   Resend?
                 </button>
               </span>
             </h2>
           </div>
 
-          <InputOTP maxLength={6} value={otp} onChange={handleOtpChange}>
-            <InputOTPGroup>
-              <InputOTPSlot
-                index={0}
-                className="border p-5 ml-1 border-slate-500"
-              />
-              <InputOTPSlot
-                index={1}
-                className="border p-5 ml-1 border-slate-500"
-              />
-              <InputOTPSlot
-                index={2}
-                className="border p-5 ml-1 border-slate-500"
-              />
-              <InputOTPSlot
-                index={3}
-                className="border p-5 ml-1 border-slate-500"
-              />
-              <InputOTPSlot
-                index={4}
-                className="border p-5 ml-1 border-slate-500"
-              />
-              <InputOTPSlot
-                index={5}
-                className="border p-5 ml-1 border-slate-500"
-              />
-            </InputOTPGroup>
-          </InputOTP>
+          {/* OTP Input Fields */}
+          <div className="flex mb-6">
+            <InputOTP maxLength={4} className="" onChange={(e) => { otp.current = e }}>
+              <InputOTPGroup className="space-x-2">
+                {[...Array(4)].map((_, index) => (
+                  <InputOTPSlot
+                    key={index}
+                    index={index}
+                    className="text-white text-xl h-14"
+                    autoFocus={index === 0}
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
 
+          {/* Verify Button */}
           <button
+            className="w-full h-14 bg-[#F4F4F4] text-black font-medium py-4 rounded-xl hover:bg-white transition-colors text-lg"
             onClick={handleSubmit}
-            disabled={otp.length !== 6 || isSubmitting}
-            className={cn(
-              "w-full mt-10 h-14 text-black font-medium py-4 rounded-xl transition-colors text-lg",
-              otp.length === 6 && !isSubmitting
-                ? "bg-[#F4F4F4] hover:bg-white"
-                : "bg-neutral-400 cursor-not-allowed"
-            )}
+            disabled={isProcessing}
           >
-            {isSubmitting ? "Verifying..." : "Verify"}
+            Verify
           </button>
         </div>
       </DialogContent>

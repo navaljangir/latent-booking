@@ -77,18 +77,12 @@ router.post("/signup/verify",otpVerifyRateLimiter, async (req, res) => {
         }
     })
 
-    const sessionId= crypto.randomUUID();
-    const token = jwt.sign({
-        userId: user.id,
-        plan : user.plan,
-        sessionId
-    }, JWT_PASSWORD)
-
+    const sessionId= crypto.randomUUID()
     // Set user sessions to validate login based on plan
     const sessionKey = `session:${user.id}`
     await setUserSessionsByPlan(sessionKey , user.plan , sessionId)
 
-    setCookie(res, token, 200, "LOGIN");
+    setCookie(res, 200, sessionId , user.id, user.plan,  "LOGIN");
 
 });
 
@@ -157,16 +151,9 @@ router.post("/signin/verify",otpVerifyRateLimiter, async (req, res) => {
         }
     })
     const sessionId= crypto.randomUUID();
-    const token = jwt.sign({
-        userId: user.id,
-        plan : user.plan,
-        sessionId
-
-    }, JWT_PASSWORD)
-
     const sessionKey = `session:${user.id}`
     await setUserSessionsByPlan(sessionKey , user.plan, sessionId)
-    setCookie(res,token, 200, "VERIFY")
+    setCookie(res, 200, sessionId , user.id, user.plan,  "VERIFY");
 
 });
 

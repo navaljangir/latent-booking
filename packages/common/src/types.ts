@@ -67,7 +67,7 @@ export const UserSignUpSchema = z.object({
 
 export const UserSignUpVerifySchema = z.object({
     number: z.string().min(9).max(13),
-    totp: z.string().min(6).max(6),
+    totp: z.string().min(4).max(6),
     name: z.string().min(1).max(255)
 })
 
@@ -77,6 +77,8 @@ export const SignInSchema = z.object({
 
 export const SignInVerifySchema = z.object({
     number: z.string().min(9).max(13),
-    totp: z.string().min(6).max(6)
+    totp: z.string().min(4).max(6)
 })
 
+export type SignInVerifyType = z.infer<typeof SignInVerifySchema>
+export type SignUpVerifyType = z.infer<typeof UserSignUpVerifySchema>
