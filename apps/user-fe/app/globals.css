@@ -116,3 +116,7 @@ a {
       /* (64.0231, 61.1318) mapped to 39% width and 29% height */
   );
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

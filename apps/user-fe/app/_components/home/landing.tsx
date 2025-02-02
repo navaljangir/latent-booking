@@ -1,5 +1,4 @@
 import Footer from "../../_common/footer";
-import Navbar from "../../_common/navbar";
 import FooterCta from "./footer-cta";
 import { HeroText } from "./heroText";
 import { JoinButton } from "./joinButton";
@@ -12,7 +11,6 @@ export function LandingPage() {
   return (
     <>
       <main className="min-h-screen bg-black">
-        <Navbar />
         <div className="container mx-auto px-16 py-12">
           <div className="grid grid-cols-1  lg:grid-cols-2 gap-12 items-start ">
             <div className=" h-full flex items-center">

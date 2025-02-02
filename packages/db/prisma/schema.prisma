@@ -18,8 +18,16 @@ model User {
   number    String    @unique
   name      String
   verified  Boolean   @default(false)
+  plan      PlanType  @default(start)
   bookings  Booking[]
   payments  Payment[]
+}
+
+enum PlanType {
+  start
+  basic
+  standard
+  premium
 }
 
 enum AdminType {

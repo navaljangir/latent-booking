@@ -1,9 +1,12 @@
+'use client'
 import Image from "next/image";
 import { figtree } from "../../lib/fonts";
 import { cn } from "@repo/ui/utils";
 import { latentPlusLogo, latentLogo, logos } from "../../assets";
+import { useRouter } from "next/navigation";
 
 export function LatentPlusCard() {
+  const router= useRouter()
   return (
     <div className="relative w-full aspect-[1.91] rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a1a1a] to-[#000000]">
       {/* Base gradient image with built-in logos */}
@@ -50,6 +53,7 @@ export function LatentPlusCard() {
               "hover:opacity-90 transition-opacity relative z-10",
               figtree.className
             )}
+            onClick={()=> router.push('/upgrade')}
           >
             <span className="text-neutral-950 text-sm font-bold tracking-wide">
               UPGRADE NOW

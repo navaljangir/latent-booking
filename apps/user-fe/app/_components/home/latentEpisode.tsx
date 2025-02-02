@@ -33,10 +33,24 @@ export function LatentEpisodes() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <EpisodeCard />
-        <EpisodeCard />
-        <EpisodeCard />
+      <div className="flex overflow-x-scroll no-scrollbar">
+        <div className="flex flex-nowrap gap-6">
+          <div className="w-96">
+            <EpisodeCard />
+          </div>
+          <div className="w-96">
+            <EpisodeCard />
+          </div>
+          <div className="w-96">
+            <EpisodeCard />
+          </div>
+          <div className="w-96">
+            <EpisodeCard />
+          </div>
+          <div className="w-96">
+            <EpisodeCard />
+          </div>
+        </div>
       </div>
     </div>
   );

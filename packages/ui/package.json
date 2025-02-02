@@ -10,7 +10,8 @@
     "./dialog": "./src/dialog.tsx",
     "./form": "./src/form.tsx",
     "./label": "./src/label.tsx", 
-    "./input": "./src/input.tsx"
+    "./input": "./src/input.tsx",
+    "./otp-input" : "./src/otp-input.tsx"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
